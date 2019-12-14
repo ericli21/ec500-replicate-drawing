@@ -1,36 +1,24 @@
 #include <AFMotor.h>
 #include <Wire.h>
 
-
-// BASE RANGE: 50 (LEFT) to 463(RIGHT), 315 MID
-// SHOULDER RANGE: 245 (up) to 945 (DOWN), 325 MID
-// ELBOW RANGE: 145 (UP) to 610 (DOWN), 415 MID
-// WRIST RANGE: 370 (UP) to 490 (DOWN) , 512 MID
-
-// drawing pos
-// elbow 143
-// wrist 490
-// base 280
-// shoulder 1023
-
 // Sketch variables, motor declarations
-AF_DCMotor baseMotor(1); //A0
-AF_DCMotor shoulderMotor(2); //A1
-AF_DCMotor elbowMotor(3); //A2
-AF_DCMotor wristMotor(4); //A3
+AF_DCMotor baseMotor(1);      //A0
+AF_DCMotor shoulderMotor(2);  //A1
+AF_DCMotor elbowMotor(3);     //A2
+AF_DCMotor wristMotor(4);     //A3
 
 // Point Offsets
 int diffArray [10] [4] = {
- {14, 92, -44, 81}, // START PG
- {1, 103, -103, -1}, // PG -Y
- {-15, -195, 147, -80}, // -Y START
- {-15, 70, -125, 0}, // -Y SQ
- {-20, -116, 219, -30}, // SQ +X
- {20, -149, 53, -50}, // +X START
- {15, 195, -147, 80}, // START -Y
- {-20, -13, 25, -6}, // SQ HG 
- {0, -103, 194, -24}, // HG +X
- {50, 0, 0, 0}  //offest
+ {14, 92, -44, 81},         // START PG     0
+ {1, 103, -103, -1},        // PG -Y        1
+ {-15, -195, 147, -80},     // -Y START     2
+ {-15, 70, -125, 0},        // -Y SQ        3
+ {-20, -116, 219, -30},     // SQ +X        4
+ {20, -149, 53, -50},       // +X START     5
+ {15, 195, -147, 80},       // START -Y     6
+ {-20, -13, 25, -6},        // SQ HG        7
+ {0, -103, 194, -24},       // HG +X        8
+ {50, 0, 0, 0}              //offest        9
 };
 
 // Signals for the Raspberry Pi
@@ -57,8 +45,8 @@ void setup() {
   pinMode(4, OUTPUT);
 
   // MQTT stuff
-  Wire.begin(4);                // join i2c bus with address #4
-  Wire.onReceive(receiveEvent); // register event
+  Wire.begin(4);
+  Wire.onReceive(receiveEvent);
   Wire.onRequest(requestEvent);
 
 }
@@ -91,17 +79,14 @@ void loop() {
   // Bring arm back to starting position
   int ret = resetPos();
   delay(1500);
-  int ret3 = topLeft();
-  delay(1500);
-  int ret2 =  drawStartY(diffArray[6]);
-
-/*
+  
   if(ret == 1)
   {
 
     // Ready to draw
     armReady = true;
 
+    // Wait for information from the Raspberry Pi
     while(drawingReceived == false)
     {
       delay(250);
@@ -109,80 +94,119 @@ void loop() {
 
     // Drawing
     armReady = false;
-    
+
+    // For each shape received from the Pi
     for(int i = 0; i < (sizeof(shapes) / sizeof(shapes[0])); i++) 
     {
       switch (shapes[i]) {
         case 3: //Triangle
           {
             Serial.println("Triangle");
-            //drawLineXYPos(false, int delayTime)
-            //drawLineXYNeg(true, int delayTime)
-            //drawLineX(true, int delayTime)
+            //int ret3 = topLeft();
+            //draw(diffArray[0]);
+            //draw(diffArray[1]);
+            //draw(diffArray[2]);
           }
           break;
         case 4: // Square
           {
             Serial.println("Square");
-            //drawLineX(true, int delayTime)
-            //drawLineY(true, int delayTime)
-            //drawLineX(false, int delayTime)
-            //drawLineY(false, int delayTime)
+            //int ret3 = topLeft();
+            //draw(diffArray[6]);
+            //draw(diffArray[3]);
+            //draw(diffArray[4]);
+            //draw(diffArray[5]);
+
+            // The following code is what currently works to draw a rectangle
+            int ret3 = topLeft();
+            delay(1500);
+
+            // Draw first vertical line
+            int ret2 =  draw(diffArray[6]);
+
+            // Draw horizontal line
+            baseMotor.run(BACKWARD);
+            delay(100);
+
+            // Draw horizontal line
+            ret = resetPos();
+            wristMotor.run(BACKWARD);
+            delay(50);
+            ret3 = topLeft();
+            baseMotor.run(BACKWARD);
+            delay(1000);
+            baseMotor.run(RELEASE);
+
+            // Draw vertical line
+            ret2 =  draw(diffArray[6]);
           }
           break;
         case 5: // Pentagon
           {
             Serial.println("Pentagon");
-            //drawLineXYPos(false, int delayTime)
-            //drawLineXYNeg(true, int delayTime)
-            //drawLineXYPos(true, int delayTime)
-            //drawLineX(false, int delayTime)
-            //drawLineXYNeg(false, int delayTime)
+            //int ret3 = topLeft();
+            //draw(diffArray[0]);
+            //draw(diffArray[1]);
+            //draw(diffArray[3]);
+            //draw(diffArray[4]);
+            //draw(diffArray[5]);
           }
           break;
         case 6: // Hexagon
           {
             Serial.println("Hexagon");
-            //drawLineX(false, int delayTime)
-            //drawLineXYNeg(true, int delayTime)
-            //drawLineXYPos(true, int delayTime)
-            //drawLineX(false, int delayTime)
-            //drawLineXYNeg(false, int delayTime)
-            //drawLineXYPos(false, int delayTime)
+            //int ret3 = topLeft();
+            //draw(diffArray[0]);
+            //draw(diffArray[1]);
+            //draw(diffArray[3]);
+            //draw(diffArray[7]);
+            //draw(diffArray[8]);
+            //draw(diffArray[5]);
+          }
+          break;
+        case 7: // Circle
+          {
+            Serial.println("Circle");
+            //int ret3 = topLeft();
+            //drawCircle();
           }
           break;
         case 8: // Circle
           {
             Serial.println("Circle");
-            //drawCircle(true, int delayTime)
+            //int ret3 = topLeft();
+            //drawCircle();
+          }
+          break;
+        case 9: // Circle
+          {
+            Serial.println("Circle");
+            //int ret3 = topLeft();
+            //drawCircle();
           }
           break;
         default:
           Serial.println("No more shapes!");
           break;
       }
+
+      // Reset position for next shape
+      ret = resetPos();
+      
     }
   }
-*/
+
   // Release motors
   wristMotor.run(RELEASE);
   baseMotor.run(RELEASE);
   elbowMotor.run(RELEASE);
   shoulderMotor.run(RELEASE);
+
+  drawingReceived = false;
   
-  delay(50000);
+  delay(2000);
   
 }
-
-
-
-
-
-
-
-
-
-
 
 // Reach starting position
 int resetPos(){
@@ -203,7 +227,7 @@ int resetPos(){
   {
     Serial.println("Resetting arm position");
     
-    // Base motor reset, reset value range is 320 - 325
+    // Base motor reset, reset value range is 315 - 320
     if(!inRangeBase)
     {
       while(sensorValueA0 < 315 || sensorValueA0 > 320)
@@ -212,16 +236,12 @@ int resetPos(){
         {
           baseMotor.run(BACKWARD);
           sensorValueA0 = analogRead(A0);
-          Serial.print("Base (A0) value: ");
-          Serial.println(sensorValueA0);
           delay(10);
         }
         else if(sensorValueA0 > 320)
         {
           baseMotor.run(FORWARD);
           sensorValueA0 = analogRead(A0);
-          Serial.print("Base (A0) value: ");
-          Serial.println(sensorValueA0);
           delay(10);
         }
       }
@@ -233,23 +253,19 @@ int resetPos(){
 
     if(!inRangeShoulder)
     {
-      // Shoulder motor reset, reset value range is 320 - 325
+      // Shoulder motor reset, reset value range is 400 - 405
       while(sensorValueA1 < 400 || sensorValueA1 > 405)
       {
         if(sensorValueA1 < 400)
         {
           shoulderMotor.run(FORWARD);
           sensorValueA1 = analogRead(A1);
-          Serial.print("Shoulder (A1) value BACKWARD: ");
-          Serial.println(sensorValueA1);
           delay(50);
         }
         else if(sensorValueA1 > 405)
         {
           shoulderMotor.run(BACKWARD);
           sensorValueA1 = analogRead(A1);
-          Serial.print("Shoulder (A1) value FORWARD: ");
-          Serial.println(sensorValueA1);
           delay(50);
         }
       }
@@ -261,23 +277,19 @@ int resetPos(){
 
     if(!inRangeElbow)
     {
-      // Elbow motor reset, reset value range is 510 - 515
+      // Elbow motor reset, reset value range is 415 - 420
       while(sensorValueA2 < 415 || sensorValueA2 > 420)
       {
         if(sensorValueA2 < 415)
         {
           elbowMotor.run(FORWARD);
           sensorValueA2 = analogRead(A2);
-          Serial.print("Elbow (A2) value: ");
-          Serial.println(sensorValueA2);
           delay(10);
         }
         else if(sensorValueA2 > 420)
         {
           elbowMotor.run(BACKWARD);
           sensorValueA2 = analogRead(A2);
-          Serial.print("Elbow (A2) value: ");
-          Serial.println(sensorValueA2);
           delay(10);
         }
       }
@@ -296,16 +308,12 @@ int resetPos(){
         {
           wristMotor.run(FORWARD);
           sensorValueA3 = analogRead(A3);
-          Serial.print("Wrist (A3) value: ");
-          Serial.println(sensorValueA3);
           delay(10);
         }
         else if(sensorValueA3 > 515)
         {
           wristMotor.run(BACKWARD);
           sensorValueA3 = analogRead(A3);
-          Serial.print("Wrist (A3) value: ");
-          Serial.println(sensorValueA3);
           delay(10);
         }
       }
@@ -321,17 +329,8 @@ int resetPos(){
   return 1;
 }
 
-
-
-
-
-
-
-
-
-
-
 // Reach starting position for drawing
+// Same as resetPos but with different values
 int topLeft(){
 
   // Potentiometer values
@@ -350,7 +349,7 @@ int topLeft(){
   {
     Serial.println("Resetting drawing position");
     
-    // Base motor reset, reset value range is 930 - 935
+    // Base motor reset, reset value range is 278 - 283
     if(!inRangeBase)
     {
       while(sensorValueA0 < 278 || sensorValueA0 > 283)
@@ -359,16 +358,12 @@ int topLeft(){
         {
           baseMotor.run(BACKWARD);
           sensorValueA0 = analogRead(A0);
-          Serial.print("Base (A0) value: ");
-          Serial.println(sensorValueA0);
           delay(10);
         }
         else if(sensorValueA0 > 283)
         {
           baseMotor.run(FORWARD);
           sensorValueA0 = analogRead(A0);
-          Serial.print("Base (A2) value: ");
-          Serial.println(sensorValueA0);
           delay(10);
         }
       }
@@ -380,23 +375,19 @@ int topLeft(){
 
     if(!inRangeWrist)
     {
-      // Wrist motor reset, reset value range is 465 - 470
+      // Wrist motor reset, reset value range is 510 - 515
       while(sensorValueA3 < 510 || sensorValueA3 > 515)
       {
         if(sensorValueA3 < 510)
         {
           wristMotor.run(FORWARD);
           sensorValueA3 = analogRead(A3);
-          Serial.print("Wrist (A3) value: ");
-          Serial.println(sensorValueA3);
           delay(10);
         }
         else if(sensorValueA3 > 515)
         {
           wristMotor.run(BACKWARD);
           sensorValueA3 = analogRead(A3);
-          Serial.print("Wrist (A3) value: ");
-          Serial.println(sensorValueA3);
           delay(10);
         }
       }
@@ -408,23 +399,19 @@ int topLeft(){
 
     if(!inRangeElbow)
     {
-      // Elbow motor reset, reset value range is 75 - 80
+      // Elbow motor reset, reset value range is 150 - 155
       while(sensorValueA2 < 150 || sensorValueA2 > 155)
       {
         if(sensorValueA2 < 150)
         {
           elbowMotor.run(FORWARD);
           sensorValueA2 = analogRead(A2);
-          Serial.print("Elbow (A1) value: ");
-          Serial.println(sensorValueA2);
           delay(10);
         }
         else if(sensorValueA2 > 155)
         {
           elbowMotor.run(BACKWARD);
           sensorValueA2 = analogRead(A2);
-          Serial.print("Elbow (A2) value: ");
-          Serial.println(sensorValueA2);
           delay(10);
         }
       }
@@ -437,23 +424,19 @@ int topLeft(){
 
     if(!inRangeShoulder)
     {
-      // Shoulder motor reset, reset value range is 515 - 520
+      // Shoulder motor reset, reset value range is 923 - 928
       while(sensorValueA1 < 923 || sensorValueA1 > 928)
       {
         if(sensorValueA1 < 923)
         {
           shoulderMotor.run(FORWARD);
           sensorValueA1 = analogRead(A1);
-          Serial.print("Shoulder (A1) value: ");
-          Serial.println(sensorValueA1);
           delay(10);
         }
         else if(sensorValueA1 > 928)
         {
           shoulderMotor.run(BACKWARD);
           sensorValueA1 = analogRead(A1);
-          Serial.print("Shoulder (A1) value: ");
-          Serial.println(sensorValueA1);
           delay(10);
         }
       }
@@ -471,181 +454,29 @@ int topLeft(){
 }
 
 
-
-
-// Draw verticle line
-// Need direction and delay (pseudo length) as input
-void drawLineY(bool direction, int delayTime){
-
-  // Shoulder, Elbow, and Wrist motors only
-  if(direction) // +Y
-  {
-    shoulderMotor.run(BACKWARD);
-    elbowMotor.run(BACKWARD);
-    wristMotor.run(FORWARD);  
-  }
-  else // -Y
-  {
-    shoulderMotor.run(FORWARD);
-    elbowMotor.run(FORWARD);
-    wristMotor.run(BACKWARD);
-  }
-  
-  delay(delayTime);
-
-  // Release all motors
-  shoulderMotor.run(RELEASE);
-  elbowMotor.run(RELEASE);
-  wristMotor.run(RELEASE);
-  
-}
-
-
-
-// Draw horizontal line
-// Need direction and delay (pseudo length) as input
-void drawLineX(bool direction, int delayTime){
-
-  // Calibrate motor speed to offset base motor arc
-  baseMotor.setSpeed(100);
-  shoulderMotor.setSpeed(100);
-  elbowMotor.setSpeed(100);
-  wristMotor.setSpeed(100);
-  
-  // All motors used
-  if(direction) // +X (LEFT)
-  {
-    baseMotor.run(FORWARD);
-    
-    shoulderMotor.run(FORWARD);
-    elbowMotor.run(FORWARD);
-    wristMotor.run(BACKWARD);
-  }
-  else // -X (RIGHT)
-  {
-    baseMotor.run(BACKWARD);
-    shoulderMotor.run(BACKWARD);
-    elbowMotor.run(BACKWARD);
-    wristMotor.run(FORWARD);
-  }
-  
-  delay(delayTime);
-
-  baseMotor.run(RELEASE);
-  shoulderMotor.run(RELEASE);
-  elbowMotor.run(RELEASE);
-  wristMotor.run(RELEASE);
-  
-}
-
-// Draw negative slope diagonal line
-// Need direction and delay (pseudo length) as input
-// True is bottom to top
-// False is top to bottom
-void drawLineXYNeg(bool direction, int delayTime){
-
-  // Calibrate motor speed to offset base motor arc
-  baseMotor.setSpeed(100);
-  shoulderMotor.setSpeed(100);
-  elbowMotor.setSpeed(100);
-  wristMotor.setSpeed(100);
-  
-  // All motors used
-  if(direction) // Top to bottom
-  {
-    baseMotor.run(FORWARD);
-    
-    shoulderMotor.run(FORWARD);
-    elbowMotor.run(FORWARD);
-    wristMotor.run(BACKWARD);
-  }
-  else // Bottom to top
-  {
-    baseMotor.run(BACKWARD);
-    shoulderMotor.run(BACKWARD);
-    elbowMotor.run(BACKWARD);
-    wristMotor.run(FORWARD);
-  }
-  
-  delay(delayTime);
-
-  baseMotor.run(RELEASE);
-  shoulderMotor.run(RELEASE);
-  elbowMotor.run(RELEASE);
-  wristMotor.run(RELEASE);
-  
-}
-
-// Draw positive slope diagonal line
-// Need direction and delay (pseudo length) as input
-void drawLineXYPos(bool direction, int delayTime){
-
-  // Calibrate motor speed to offset base motor arc
-  baseMotor.setSpeed(100);
-  shoulderMotor.setSpeed(100);
-  elbowMotor.setSpeed(100);
-  wristMotor.setSpeed(100);
-  
-  // All motors used
-  if(direction) // Top to bottom
-  {
-    baseMotor.run(FORWARD);
-    shoulderMotor.run(FORWARD);
-    elbowMotor.run(FORWARD);
-    wristMotor.run(BACKWARD);
-  }
-  else // Bottom to Top
-  {
-    baseMotor.run(BACKWARD);
-    shoulderMotor.run(BACKWARD);
-    elbowMotor.run(BACKWARD);
-    wristMotor.run(FORWARD);
-  }
-  
-  delay(delayTime);
-
-  baseMotor.run(RELEASE);
-  shoulderMotor.run(RELEASE);
-  elbowMotor.run(RELEASE);
-  wristMotor.run(RELEASE);
-  
-}
-
-// Draw a circle
-void drawCircle(){
-
-  // Calibrate motor speed to offset base motor arc
-  baseMotor.setSpeed(100);
-  shoulderMotor.setSpeed(100);
-  elbowMotor.setSpeed(100);
-  wristMotor.setSpeed(100);
-
-  baseMotor.run(RELEASE);
-  shoulderMotor.run(RELEASE);
-  elbowMotor.run(RELEASE);
-  wristMotor.run(RELEASE);
-  
-}
-
-
 // Function that executes whenever data is received from master
 // This function is registered as an event, see setup()
 void receiveEvent(int howMany)
 {
   int index = 0;
+  int shapesNum = 0;
+  shapes[0] = 0;
+  shapes[1] = 0;
+  shapes[2] = 0;
   
-  while(0 < Wire.available()) // loop through all but the last
+  while(0 < Wire.available() && index < 15)
   {
-    char c = Wire.read(); // receive byte as a character
-    Serial.print(c);         // print the character
+    // Receive byte as a character
+    char c = Wire.read(); 
 
     inShapes[index] = c;
     index++;
-    inShapes[index] = '\0'; // Keep the string NULL terminated
+    // Keep the string NULL terminated
+    inShapes[index] = '\0'; 
   }
 
   // Parse through shapes data
-  int shapesNum = atoi(inShapes);
+  shapesNum = atoi(inShapes);
   index = 0;
   
   while(shapesNum > 0 && index < 3)
@@ -655,10 +486,12 @@ void receiveEvent(int howMany)
     index++;
   }
 
+  // Set drawing flag to true
   drawingReceived = true;
 
 }
 
+// Send armReady signal to Raspberry Pi
 void requestEvent()
 {
   if (armReady == true) {
@@ -670,19 +503,9 @@ void requestEvent()
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-// Draw from given position to another given point
-int drawStartY(int diffArray[4]){
+// Draw from current position to another given point
+// Second point location is defined by entries in diffArray
+int draw(int diffArray[4]){
 
   // Potentiometer values
   int sensorValueA0 = analogRead(A0);
@@ -698,7 +521,7 @@ int drawStartY(int diffArray[4]){
 
   // Desired readings
   int basePoint = sensorValueA0 - diffArray[0];
-  int shoulderPoint = sensorValueA1 - diffArray[1];
+  int shoulderPoint = sensorValueA1 - diffArray[1] + 10;
   int elbowPoint = sensorValueA2 - diffArray[2] + 45;
   int wristPoint = sensorValueA3 - diffArray[3];
 
@@ -721,8 +544,6 @@ int drawStartY(int diffArray[4]){
   Serial.println(elbowPoint);
   Serial.print("Wrist value: ");
   Serial.println(wristPoint);
-
-  delay(5000);
   
   while(!(inRangeShoulder && inRangeElbow && inRangeWrist))
   {
@@ -731,15 +552,11 @@ int drawStartY(int diffArray[4]){
         {
           shoulderMotor.run(FORWARD);
           sensorValueA1 = analogRead(A1);
-          Serial.print("Shoulder (A1) value BACKWARD: ");
-          Serial.println(sensorValueA1);
         }
         else if(sensorValueA1 > (shoulderPoint + 3) && !inRangeShoulder)
         {
           shoulderMotor.run(BACKWARD);
           sensorValueA1 = analogRead(A1);
-          Serial.print("Shoulder (A1) value FORWARD: ");
-          Serial.println(sensorValueA1);
         }
         else
         {
@@ -752,15 +569,11 @@ int drawStartY(int diffArray[4]){
         {
           elbowMotor.run(FORWARD);
           sensorValueA2 = analogRead(A2);
-          Serial.print("Elbow (A2) value: ");
-          Serial.println(sensorValueA2);
         }
         else if(sensorValueA2 > (elbowPoint + 3) && !inRangeElbow)
         {
           elbowMotor.run(BACKWARD);
           sensorValueA2 = analogRead(A2);
-          Serial.print("Elbow (A2) value: ");
-          Serial.println(sensorValueA2);
         }
         else
         {
@@ -773,15 +586,11 @@ int drawStartY(int diffArray[4]){
         {
           wristMotor.run(FORWARD);
           sensorValueA3 = analogRead(A3);
-          Serial.print("Wrist (A3) value: ");
-          Serial.println(sensorValueA3);
         }
         else if(sensorValueA3 > (wristPoint + 3) && !inRangeWrist)
         {
           wristMotor.run(BACKWARD);
           sensorValueA3 = analogRead(A3);
-          Serial.print("Wrist (A3) value: ");
-          Serial.println(sensorValueA3);
         }
         else
         {
@@ -791,11 +600,12 @@ int drawStartY(int diffArray[4]){
           inRangeWrist = true;
         }
 
+        // 50ms delay for steadier potentiometer readings
         delay(50);
     
   }
 
-    // Print sensor value
+  // Print sensor values
   Serial.print("Base (A0) value: ");
   Serial.println(sensorValueA0);
   Serial.print("Shoulder (A1) value: ");
