@@ -14,7 +14,7 @@ import paho.mqtt.publish as publish
 import RPi.GPIO as GPIO
 
 #MQTT Server variables
-MQTT_SERVER = "172.20.10.2"#"172.20.10.7"
+MQTT_SERVER = "172.20.10.7"
 MQTT_PATH1 = "test_channel1" #Raspi sending message to Arduino
 MQTT_PATH2 = "test_channel2" #Arduino sending message to Raspi
 
@@ -79,9 +79,12 @@ Arduino (on testchannel2), this function will be called.
 '''
 def onMessage(client, userdata, msg):
     print("In onMessage")
+    #Loop through contours and determine shape based on number of vertices
     if len(contours) != 0: #should evaluate to true if contours is not empty
         message = ''
         for cnt in contours:
+            #0.04*cv2.arcLength(cnt, True) is specifies the approximation accuracy
+            #The value 0.04 was determined through trial and error.
             approx = cv2.approxPolyDP(cnt, 0.04*cv2.arcLength(cnt, True), True)
             cv2.drawContours(thresh, [approx], 0, (0, 255, 0), 5)
             if (len(approx) == 3):
